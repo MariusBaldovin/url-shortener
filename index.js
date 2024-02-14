@@ -49,9 +49,22 @@ app.post("/api/shorturl", async (req, res) => {
 app.get("/api/shorturl/:short_url", async (req, res) => {
   const { short_url } = req.params;
 
-  // Perform logic to retrieve the original URL based on the short URL
-  // Redirect to the original URL
-  res.redirect(originalUrl);
+  try {
+    // Find the corresponding document in the database
+    const url = await Url.findOne({ short_url: short_url });
+
+    // If the document is not found, return an error response
+    if (!url) {
+      return res.status(404).json({ error: "Short URL not found" });
+    }
+
+    // Redirect to the original URL
+    res.redirect(url.original_url);
+  } catch (error) {
+    // Handle any errors
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // Handle invalid URL format
