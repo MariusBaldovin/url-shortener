@@ -6,6 +6,8 @@ const app = express();
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
+let counter = 1; // Initialize counter for generating short URLs
+const urlDatabase = {}; // Store original URLs and corresponding short URLs
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -36,8 +38,11 @@ app.post("/api/shorturl", async (req, res) => {
     if (err) {
       return res.json({ error: "invalid url" });
     } else {
-      // Generate short URL
-      const shortUrl = nanoid(7);
+      // Generate short URL using counter
+      const shortUrl = counter++;
+
+      // Store original URL and corresponding short URL
+      urlDatabase[shortUrl] = url;
 
       // Return JSON response with original_url and short_url properties
       res.json({ original_url: url, short_url: shortUrl });
@@ -49,21 +54,15 @@ app.post("/api/shorturl", async (req, res) => {
 app.get("/api/shorturl/:short_url", async (req, res) => {
   const { short_url } = req.params;
 
-  try {
-    // Find the corresponding document in the database
-    const url = await Url.findOne({ short_url: short_url });
+  // Retrieve the original URL based on the short URL
+  const originalUrl = urlDatabase[short_url];
 
-    // If the document is not found, return an error response
-    if (!url) {
-      return res.status(404).json({ error: "Short URL not found" });
-    }
-
+  if (originalUrl) {
     // Redirect to the original URL
-    res.redirect(url.original_url);
-  } catch (error) {
-    // Handle any errors
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+    res.redirect(originalUrl);
+  } else {
+    // If short URL not found, return error response
+    res.status(404).json({ error: "Short URL not found" });
   }
 });
 
