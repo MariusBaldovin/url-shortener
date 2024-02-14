@@ -1,32 +1,12 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
 const dns = require("dns");
 const { nanoid } = require("nanoid");
 const app = express();
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI;
-
-// Connect to MongoDB
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-const connection = mongoose.connection;
-connection.on(
-  "error",
-  console.error.bind(console, "MongoDB connection error:")
-);
-
-// Define schema and model for URL
-const urlSchema = new mongoose.Schema({
-  original_url: { type: String, required: true },
-  short_url: { type: String, required: true },
-});
-const Url = mongoose.model("Url", urlSchema);
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -60,10 +40,7 @@ app.post("/api/shorturl", async (req, res) => {
       // Generate short URL
       const shortUrl = nanoid(7);
 
-      // Save the URL in the database
-      const newUrl = new Url({ original_url: url, short_url: shortUrl });
-      await newUrl.save();
-
+      // Return JSON response with original_url and short_url properties
       res.json({ original_url: url, short_url: shortUrl });
     }
   });
@@ -73,15 +50,17 @@ app.post("/api/shorturl", async (req, res) => {
 app.get("/api/shorturl/:short_url", async (req, res) => {
   const { short_url } = req.params;
 
-  try {
-    const url = await Url.findOne({ short_url: short_url });
-    if (!url) {
-      return res.json({ error: "invalid short url" });
-    }
-    res.redirect(url.original_url);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "server error" });
+  // Perform logic to retrieve the original URL based on the short URL
+  // Redirect to the original URL
+  res.redirect(originalUrl);
+});
+
+// Handle invalid URL format
+app.use((err, req, res, next) => {
+  if (err instanceof URIError) {
+    res.status(400).json({ error: "invalid url" });
+  } else {
+    next();
   }
 });
 
