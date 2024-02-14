@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const dns = require("dns");
-const { nanoid } = require("nanoid");
 const app = express();
 
 // Basic Configuration
